@@ -1,7 +1,7 @@
 package brogger
 
 import (
-	"io"
+	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -57,25 +57,19 @@ func TestJsonConfigStruct(t *testing.T) {
 	defer os.Remove("test_config.json")
 	origfile, _ := os.Open("brog_config.json")
 	testfile, _ := os.Open("test_config.json")
-	origbuf := make([]byte, 512)
-	testbuf := make([]byte, 512)
-	for {
-		i, origerr := origfile.Read(origbuf)
-		j, testerr := testfile.Read(testbuf)
-		if origerr == io.EOF || testerr == io.EOF {
-			if !(origerr == io.EOF && testerr == io.EOF) {
-				t.Error("One config file ended before the other")
-			}
-			break
-		}
-		if i != j {
-			t.Error("Different amounts read into each config file buffer:", i, j)
-			break
-		}
-		for k := 0; k < i; k++ {
-			if origbuf[k] != testbuf[k] {
-				t.Error("Config files are not byte-by-byte equal")
-			}
+	origbuf, origerr := ioutil.ReadAll(origfile)
+	testbuf, testerr := ioutil.ReadAll(testfile)
+	origfile.Close()
+	testfile.Close()
+	if origerr != nil || testerr != nil {
+		t.Error("Error reading original config:", origerr, "or reading test config:", testerr)
+	}
+	if len(origbuf) != len(testbuf) {
+		t.Error("One config file ended before the other")
+	}
+	for i := range origbuf {
+		if origbuf[i] != testbuf[i] {
+			t.Error("Config files are not byte-by-byte equal")
 		}
 	}
 }
